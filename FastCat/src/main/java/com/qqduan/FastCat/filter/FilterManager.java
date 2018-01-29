@@ -8,7 +8,10 @@ import org.apache.log4j.Logger;
 
 import com.qqduan.FastCat.annotation.Filter;
 import com.qqduan.FastCat.core.Definiens;
+import com.qqduan.FastCat.core.Invocation;
+import com.qqduan.FastCat.core.Result;
 import com.qqduan.FastCat.interfaces.IFilter;
+import com.qqduan.FastCat.interfaces.IInvoker;
 import com.qqduan.FastCat.util.FileUtil;
 
 public class FilterManager {
@@ -55,6 +58,23 @@ public class FilterManager {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static IInvoker link(final IInvoker invoker) {
+		IInvoker last = invoker;
+		if (!filters.isEmpty()) {
+			for (int i = filters.size() - 1; i >= 0; i--) {
+				IFilter filter = filters.get(i);
+				IInvoker next = last;
+				last = new IInvoker() {
+					@Override
+					public Result invoke(Invocation invocation) {
+						return filter.invoke(next, invocation);
+					}
+				};
+			}
+		}
+		return last;
 	}
 
 }

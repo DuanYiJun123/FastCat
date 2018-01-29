@@ -1,6 +1,8 @@
 package com.qqduan.FastCat.core;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import org.dom4j.Element;
 import com.qqduan.FastCat.annotation.AutoCycleLife;
 import com.qqduan.FastCat.exception.ContextXmlError;
 import com.qqduan.FastCat.exception.MySystemException;
+import com.qqduan.FastCat.interfaces.IFilter;
 import com.qqduan.FastCat.interfaces.IService;
 
 public class ApplicationContext {
@@ -23,10 +26,6 @@ public class ApplicationContext {
 	private static final Map<Class<?>, Element> ELEMENTS = new ConcurrentHashMap<>();
 
 	private ApplicationContext() {
-	}
-
-	public static ApplicationContext newInstance() {
-		return instance;
 	}
 
 	static {
@@ -49,6 +48,44 @@ public class ApplicationContext {
 					}
 				});
 			}
+		}
+	}
+
+	public static ApplicationContext instance() {
+		return instance;
+	}
+
+	public <T extends IFilter> T getFilter(Class<T> clz) {
+		LOGGER.debug("get bean of " + clz.getName());
+		if (BEANS.containsKey(clz)) {
+			return (T) BEANS.get(clz);
+		}
+		LOGGER.debug("bean of " + clz.getName() + " is not found ,prepare to create");
+
+		try {
+			T newInstance = newInstance(clz);
+
+			HashMap<String, Element> properties = getProperties(clz);
+
+			Field[] fields = clz.getDeclaredFields();
+
+			for (Field field : fields) {
+				if (field.getAnnotation(AutoCycleLife.class) != null) {
+					if (properties == null) {
+						throw new ContextXmlError(clz.getName() + " is not found in context xml");
+					}
+					field.setAccessible(true);
+					Element propertyEle = properties.get(field.getName());
+					setField(field, newInstance, propertyEle);
+				}
+			}
+
+			LOGGER.debug("bean of " + clz.getName() + " created");
+
+			BEANS.put(clz, newInstance);
+			return newInstance;
+		} catch (SecurityException | IllegalArgumentException e) {
+			throw new MySystemException(e);
 		}
 	}
 
@@ -78,6 +115,40 @@ public class ApplicationContext {
 		return null;
 	}
 
+	public <T> T getBean(Class<T> clz) {
+		LOGGER.debug("get bean of " + clz.getName());
+		if (BEANS.containsKey(clz)) {
+			return (T) BEANS.get(clz);
+		}
+		LOGGER.debug("bean of " + clz.getName() + " is not found ,prepare to create");
+
+		try {
+			T newInstance = newInstance(clz);
+
+			HashMap<String, Element> properties = getProperties(clz);
+
+			Field[] fields = clz.getDeclaredFields();
+
+			for (Field field : fields) {
+				if (field.getAnnotation(AutoCycleLife.class) != null) {
+					if (properties == null) {
+						throw new ContextXmlError(clz.getName() + " is not found in context xml");
+					}
+					field.setAccessible(true);
+					Element propertyEle = properties.get(field.getName());
+					setField(field, newInstance, propertyEle);
+				}
+			}
+
+			LOGGER.debug("bean of " + clz.getName() + " created");
+
+			BEANS.put(clz, newInstance);
+			return newInstance;
+		} catch (SecurityException | IllegalArgumentException e) {
+			throw new MySystemException(e);
+		}
+	}
+
 	private <T> void setField(Field field, T newInstance, Element propertyEle) {
 		if (propertyEle.attribute("value") != null) {
 			setValue(field, newInstance, propertyEle);
@@ -96,9 +167,16 @@ public class ApplicationContext {
 		}
 	}
 
-	public Object getBean(Class<?> clz) {
-		// TODO Auto-generated method stub
-		return null;
+	private <T> T newInstance(Class<T> clz) {
+		try {
+			Constructor<T> constructor = clz.getConstructor();
+			constructor.setAccessible(true);
+			T newInstance = constructor.newInstance();
+			return newInstance;
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException e) {
+			throw new MySystemException(e);
+		}
 	}
 
 	private <T> void setValue(Field field, T newInstance, Element propertyEle) {
