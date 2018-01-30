@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.qqduan.FastCat.annotation.Filter;
+import com.qqduan.FastCat.core.ApplicationContext;
 import com.qqduan.FastCat.core.Definiens;
 import com.qqduan.FastCat.core.Invocation;
 import com.qqduan.FastCat.core.Result;
@@ -23,6 +24,11 @@ public class FilterManager {
 
 	public static void init() {
 		List<BaseFilter> inners = new ArrayList<>();
+		
+		IFilter newInstance = ApplicationContext.instance().getFilter(LogDebugFilter.class);
+		
+		inners.add(new BaseFilter(0, newInstance));
+		
 		String path = FileUtil.getAppRoot() + File.separator + "src" + File.separator + "main" + File.separator + "java"
 				+ File.separator + Definiens.FILTER_PACKAGE.replaceAll("\\.", "/");
 

@@ -8,9 +8,9 @@ import com.qqduan.FastCat.core.LoggerManager;
 import com.qqduan.FastCat.filter.FilterManager;
 import com.qqduan.FastCat.http.HttpService;
 
-public class App {
+public class FastCatSystem {
 
-	private static Logger LOGGER = Logger.getLogger(App.class);
+	private static Logger LOGGER = Logger.getLogger(FastCatSystem.class);
 
 	private static void start(String path) {
 		Definiens.init(path);
