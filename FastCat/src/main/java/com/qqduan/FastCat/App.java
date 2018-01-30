@@ -1,13 +1,24 @@
 package com.qqduan.FastCat;
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
-    }
+import org.apache.log4j.Logger;
+
+import com.qqduan.FastCat.core.Definiens;
+import com.qqduan.FastCat.core.HandlerManager;
+import com.qqduan.FastCat.core.LoggerManager;
+import com.qqduan.FastCat.filter.FilterManager;
+import com.qqduan.FastCat.http.HttpService;
+
+public class App {
+
+	private static Logger LOGGER = Logger.getLogger(App.class);
+
+	private static void start(String path) {
+		Definiens.init(path);
+		LoggerManager.init(Definiens.LOG4J_PATH);
+		LOGGER.info("System init...");
+		FilterManager.init();
+		HandlerManager.init();
+		HttpService.init();
+	}
+
 }
